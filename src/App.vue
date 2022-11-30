@@ -41,7 +41,8 @@
         <div class="flex items-center">
           <input
             v-model="connectionId"
-            class="flex-1 text-4xl bg-transparent p-2 text-center border-2"
+            class="flex-1 bg-transparent p-4 text-center border-2"
+            maxlength="5"
           >
           <button
             class="bg-transparent border text-green-500 border-green-500 h-full ml-3 p-4 rounded"
