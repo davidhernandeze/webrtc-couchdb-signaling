@@ -7,7 +7,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "setup": "couchdb/setup.js"
+    "setup": "node couchdb/setup.js"
   },
   "dependencies": {
     "events": "^3.3.0",

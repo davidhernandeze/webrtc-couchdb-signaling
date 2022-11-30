@@ -1,6 +1,6 @@
 import axios from 'axios'
 import * as dotenv from 'dotenv'
-dotenv.config({ path: '../.env' })
+dotenv.config()
 
 const client = axios.create({
   auth: {
@@ -12,6 +12,8 @@ const client = axios.create({
 
 client.put('_users').then(() => {
   console.log('_users database created')
+}).catch((e) => {
+  console.log(e.response?.data?.reason)
 })
 
 client.put('signaling').then(async () => {
@@ -26,6 +28,7 @@ client.put('signaling').then(async () => {
       roles: []
     }
   })
-
   console.log('signaling is now a public database')
+}).catch((e) => {
+  console.log(e.response?.data?.reason)
 })
