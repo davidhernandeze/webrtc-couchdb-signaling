@@ -103,13 +103,13 @@ import { onBeforeMount, ref } from 'vue'
 import PouchDB from 'pouchdb-browser'
 import { v4 as getId } from 'uuid'
 
-const signalingServer = 'https://db.minderal.com'
+const signalingServerURL = import.meta.env.VITE_COUCHDB_SERVER
 const signalingDocument = ref()
 const connectionId = ref()
 const connectionMode = ref()
 const isConnected = ref(false)
 
-const signalingDatabase = new PouchDB(signalingServer + '/signaling')
+const signalingDatabase = new PouchDB(signalingServerURL + 'signaling')
 
 onBeforeMount(async () => {
   await signalingDatabase.info()
@@ -119,7 +119,7 @@ onBeforeMount(async () => {
 const peerConnection = new RTCPeerConnection({
   iceServers: [
     {
-      urls: 'stun:openrelay.metered.ca:80'
+      urls: import.meta.env.VITE_STUN_SERVER
     }
   ]
 })

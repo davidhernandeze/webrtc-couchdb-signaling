@@ -10,7 +10,7 @@ services:
         source: ./couchdb/config.ini
         target: /opt/couchdb/etc/local.d/config.ini
     environment:
-      COUCHDB_USER: admin
-      COUCHDB_PASSWORD: "password"
+      COUCHDB_USER: ${COUCHDB_USER}
+      COUCHDB_PASSWORD: ${COUCHDB_PASSWORD}
 volumes:
   couchdb:

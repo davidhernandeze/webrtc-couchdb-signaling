@@ -1,11 +1,13 @@
 import axios from 'axios'
+import * as dotenv from 'dotenv'
+dotenv.config({ path: '../.env' })
 
 const client = axios.create({
   auth: {
-    username: 'admin',
-    password: 'password'
+    username: process.env.COUCHDB_USER,
+    password: process.env.COUCHDB_PASSWORD
   },
-  baseURL: 'http://localhost:5984/'
+  baseURL: process.env.COUCHDB_SERVER
 })
 
 client.put('_users').then(() => {
