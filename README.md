@@ -1,5 +1,4 @@
-# minderal
-Web based mental database manager
+# WebRTC signaling using CouchDB
 
 ## Run web server
 ```commandline
