@@ -28,24 +28,33 @@
       </button>
       <div v-if="connectionMode === 'host'">
         <div class="mt-4">
-          Your connection code is:
+          Your connection ID (click to copy)
         </div>
-        <div class="text-4xl">
+        <div
+          class="text-4xl cursor-pointer"
+          @click="idToClipboard"
+        >
           {{ connectionId }}
+        </div>
+        <div
+          v-show="showCopiedLabel"
+          class="text-xs text-green-500 uppercase font-bold mt-2"
+        >
+          ID COPIED!
         </div>
       </div>
       <div v-else-if="connectionMode === 'join'">
         <div class="mt-4">
           Introduce your connection code:
         </div>
-        <div class="flex items-center">
+        <div class="flex flex-wrap items-center">
           <input
             v-model="connectionId"
-            class="flex-1 bg-transparent p-4 text-center border-2"
+            class="text-2xl w-full sm:w-auto mb-4 sm:mb-0 bg-transparent p-4 text-center border-2"
             maxlength="5"
           >
           <button
-            class="bg-transparent border text-green-500 border-green-500 h-full ml-3 p-4 rounded"
+            class="w-full sm:w-auto bg-transparent border text-green-500 border-green-500 h-full ml-0 sm:ml-3 p-4 rounded"
             @click="joinConnection"
           >
             CONNECT
@@ -117,6 +126,7 @@ const peerConnection = new RTCPeerConnection({
 
 async function initConnection () {
   connectionMode.value = 'host'
+  if (connectionId.value) return
   connectionId.value = getId().substring(0, 5).toUpperCase()
   await signalingDatabase.put({
     _id: connectionId.value,
@@ -186,6 +196,15 @@ function sendMessage () {
   messages.value.push({ id: getId(), isLocal: true, message: newMessage.value })
   peerConnection.dc.send(newMessage.value)
   newMessage.value = ''
+}
+
+const showCopiedLabel = ref(false)
+async function idToClipboard () {
+  await navigator.clipboard.writeText(connectionId.value)
+  showCopiedLabel.value = true
+  setTimeout(() => {
+    showCopiedLabel.value = false
+  }, 1000)
 }
 
 </script>
