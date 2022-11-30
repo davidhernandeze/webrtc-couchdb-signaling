@@ -1,7 +1,7 @@
 {
-  "name": "minderal2",
+  "name": "webrtc-couchdb-signaling",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
