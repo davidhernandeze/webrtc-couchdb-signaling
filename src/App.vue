@@ -1,9 +1,9 @@
 <template>
   <div class="fixed right-0 top-0 p-3">
-        <span
-          v-if="isConnected"
-          class="text-green-500"
-        >Connected</span>
+    <span
+      v-if="isConnected"
+      class="text-green-500"
+    >Connected</span>
     <span
       v-else
       class="text-gray-400"
@@ -41,7 +41,7 @@
         <div class="flex items-center">
           <input
             v-model="connectionId"
-            class="text-4xl bg-transparent p-2 text-center border-2"
+            class="flex-1 text-4xl bg-transparent p-2 text-center border-2"
           >
           <button
             class="bg-transparent border text-green-500 border-green-500 h-full ml-3 p-4 rounded"
@@ -53,7 +53,10 @@
       </div>
     </div>
 
-    <div class="mt-8" v-else>
+    <div
+      v-else
+      class="mt-8"
+    >
       <div class="bg-gray-700 w-full h-96 overflow-y-hidden p-5 rounded flex-row">
         <div
           v-for="{ id, message, isLocal } in messages"
@@ -103,7 +106,13 @@ onBeforeMount(async () => {
   console.log('Signaling database connected')
 })
 
-const peerConnection = new RTCPeerConnection()
+const peerConnection = new RTCPeerConnection({
+  iceServers: [
+    {
+      urls: 'stun:openrelay.metered.ca:80'
+    }
+  ]
+})
 
 async function initConnection () {
   connectionMode.value = 'host'
