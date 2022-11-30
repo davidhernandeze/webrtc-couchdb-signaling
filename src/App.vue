@@ -90,7 +90,7 @@ import { onBeforeMount, ref } from 'vue'
 import PouchDB from 'pouchdb-browser'
 import { v4 as getId } from 'uuid'
 
-const signalingServer = 'http://localhost:5984'
+const signalingServer = 'https://db.minderal.com'
 const signalingDocument = ref()
 const connectionId = ref()
 const connectionMode = ref()
@@ -139,7 +139,6 @@ async function initConnection () {
   }
 
   dataChannel.onopen = async () => {
-    console.log('connection opened!')
     isConnected.value = true
     await signalingDatabase.remove(signalingDocument.value)
     signalingDatabase.close()
