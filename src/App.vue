@@ -156,9 +156,8 @@ async function initConnection () {
       doc_ids: [connectionId.value]
     }).on('change', async (change) => {
       if (change.doc.remote_descriptions.length === 0) return
+      console.log(change.doc.remote_descriptions.length)
       await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_descriptions[0]))
-      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_descriptions[change.doc.remote_descriptions.length - 1]))
-      console.log('hmmmm????')
       signalingDocument.value = change.doc
     })
   }
@@ -189,7 +188,6 @@ async function joinConnection () {
     signalingDatabase.put(signalingDocument.value)
   }
   peerConnection.ondatachannel = ({ channel }) => {
-    console.log('data channel')
     peerConnection.dc = channel
     peerConnection.dc.onopen = () => {
       isConnected.value = true
@@ -198,9 +196,7 @@ async function joinConnection () {
       messages.value.push({ id: getId(), isLocal: false, message: e.data })
     }
   }
-  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_descriptions[signalingDocument.value.host_descriptions.length - 1])).catch(() => {
-    console.log('errorcio')
-  })
+  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_descriptions[0]))
   const answer = await peerConnection.createAnswer()
   await peerConnection.setLocalDescription(answer)
 }
