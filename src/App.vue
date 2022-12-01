@@ -132,10 +132,8 @@ const peerConnection = new RTCPeerConnection({
 const sdps = ref(0)
 async function initConnection () {
   connectionMode.value = 'host'
-  if (connectionId.value) {
-    sdps.value++
-    return
-  }
+  if (connectionId.value) return
+
   connectionId.value = getId().substring(0, 5).toUpperCase()
   await signalingDatabase.put({
     _id: connectionId.value,
@@ -145,8 +143,12 @@ async function initConnection () {
   signalingDocument.value = await signalingDatabase.get(connectionId.value)
 
   peerConnection.onicecandidate = e => {
-    if (e.candidate) return
-    console.log('Host description created: ' + JSON.stringify(peerConnection.localDescription))
+    if (e.candidate) {
+      console.log('SDP: ' + JSON.stringify(peerConnection.localDescription))
+      sdps.value++
+      return
+    }
+    // console.log('Host description created: ' + JSON.stringify(peerConnection.localDescription))
     signalingDocument.value.host_description = JSON.stringify(peerConnection.localDescription)
     signalingDatabase.put(signalingDocument.value)
     signalingDatabase.changes({
