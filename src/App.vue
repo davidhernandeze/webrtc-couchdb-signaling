@@ -9,28 +9,25 @@
       class="text-gray-400"
     >Disconnected</span>
   </div>
-  <div class="fixed left-0 top-0 p-3">
-    <span
-      class="text-gray-400"
-    >SDPs: {{ sdps }}</span>
-  </div>
   <div class="text-gray-100 relative flex-1 container max-w-2xl mx-auto px-4 pt-10">
     <div v-if="!isConnected">
       <h1 class="text-xl mb-10">
         WebRTC Peer Connection using a CouchDB server for signaling
       </h1>
-      <button
-        class="bg-green-700 p-2 rounded"
-        @click="initConnection"
-      >
-        Create Connection
-      </button>
-      <button
-        class="bg-blue-800 p-2 rounded ml-4"
-        @click="connectionMode = 'join'"
-      >
-        Join Connection
-      </button>
+      <div v-if="!connectionMode">
+        <button
+          class="bg-green-700 p-2 rounded"
+          @click="initConnection"
+        >
+          Create Connection
+        </button>
+        <button
+          class="bg-blue-800 p-2 rounded ml-4"
+          @click="connectionMode = 'join'"
+        >
+          Join Connection
+        </button>
+      </div>
       <div v-if="connectionMode === 'host'">
         <div class="mt-4">
           Your connection ID (click to copy)
@@ -72,7 +69,10 @@
       v-else
       class="mt-8"
     >
-      <div class="bg-gray-700 w-full h-96 overflow-y-hidden p-5 rounded flex-row">
+      <div
+        ref="chatContainer"
+        class="bg-gray-700 w-full h-96 overflow-y-scroll p-5 rounded flex-row"
+      >
         <div
           v-for="{ id, message, isLocal } in messages"
           :key="id"
@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import { onBeforeMount, ref } from 'vue'
+import { nextTick, onBeforeMount, ref } from 'vue'
 import PouchDB from 'pouchdb-browser'
 import { v4 as getId } from 'uuid'
 
@@ -129,7 +129,6 @@ const peerConnection = new RTCPeerConnection({
   ]
 })
 
-const sdps = ref(0)
 async function initConnection () {
   connectionMode.value = 'host'
   if (connectionId.value) return
@@ -137,19 +136,18 @@ async function initConnection () {
   connectionId.value = getId().substring(0, 5).toUpperCase()
   await signalingDatabase.put({
     _id: connectionId.value,
-    host_description: '',
-    remote_description: ''
+    host_descriptions: [],
+    remote_descriptions: []
   })
   signalingDocument.value = await signalingDatabase.get(connectionId.value)
 
   peerConnection.onicecandidate = e => {
     if (e.candidate) {
-      console.log('SDP: ' + JSON.stringify(peerConnection.localDescription))
-      sdps.value++
+      // console.log('SDP: ' + JSON.stringify(peerConnection.localDescription))
+      signalingDocument.value.host_descriptions.push(JSON.stringify(peerConnection.localDescription))
       return
     }
     // console.log('Host description created: ' + JSON.stringify(peerConnection.localDescription))
-    signalingDocument.value.host_description = JSON.stringify(peerConnection.localDescription)
     signalingDatabase.put(signalingDocument.value)
     signalingDatabase.changes({
       live: true,
@@ -157,8 +155,10 @@ async function initConnection () {
       include_docs: true,
       doc_ids: [connectionId.value]
     }).on('change', async (change) => {
-      if (!change.doc.remote_description) return
-      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_description))
+      if (change.doc.remote_descriptions.length === 0) return
+      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_descriptions[0]))
+      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_descriptions[change.doc.remote_descriptions.length - 1]))
+      console.log('hmmmm????')
       signalingDocument.value = change.doc
     })
   }
@@ -183,14 +183,13 @@ async function joinConnection () {
   signalingDocument.value = await signalingDatabase.get(connectionId.value)
   peerConnection.onicecandidate = e => {
     if (e.candidate) {
-      sdps.value++
+      signalingDocument.value.remote_descriptions.push(JSON.stringify(peerConnection.localDescription))
       return
     }
-    console.log('Remote description created: ' + JSON.stringify(peerConnection.localDescription))
-    signalingDocument.value.remote_description = JSON.stringify(peerConnection.localDescription)
     signalingDatabase.put(signalingDocument.value)
   }
   peerConnection.ondatachannel = ({ channel }) => {
+    console.log('data channel')
     peerConnection.dc = channel
     peerConnection.dc.onopen = () => {
       isConnected.value = true
@@ -199,17 +198,22 @@ async function joinConnection () {
       messages.value.push({ id: getId(), isLocal: false, message: e.data })
     }
   }
-  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_description))
+  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_descriptions[signalingDocument.value.host_descriptions.length - 1])).catch(() => {
+    console.log('errorcio')
+  })
   const answer = await peerConnection.createAnswer()
   await peerConnection.setLocalDescription(answer)
 }
 
 const newMessage = ref()
 const messages = ref([])
-function sendMessage () {
+const chatContainer = ref()
+async function sendMessage () {
   messages.value.push({ id: getId(), isLocal: true, message: newMessage.value })
   peerConnection.dc.send(newMessage.value)
   newMessage.value = ''
+  await nextTick()
+  chatContainer.value.scrollTop = chatContainer.value.scrollHeight
 }
 
 const showCopiedLabel = ref(false)
