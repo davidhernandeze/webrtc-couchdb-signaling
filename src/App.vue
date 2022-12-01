@@ -9,7 +9,7 @@
       class="text-gray-400"
     >Disconnected</span>
   </div>
-  <div class="fixed right-0 top-0 p-3">
+  <div class="fixed left-0 top-0 p-3">
     <span
       class="text-gray-400"
     >SDPs: {{ sdps }}</span>
