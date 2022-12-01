@@ -9,6 +9,11 @@
       class="text-gray-400"
     >Disconnected</span>
   </div>
+  <div class="fixed right-0 top-0 p-3">
+    <span
+      class="text-gray-400"
+    >SDPs: {{ sdps }}</span>
+  </div>
   <div class="text-gray-100 relative flex-1 container max-w-2xl mx-auto px-4 pt-10">
     <div v-if="!isConnected">
       <h1 class="text-xl mb-10">
@@ -124,9 +129,13 @@ const peerConnection = new RTCPeerConnection({
   ]
 })
 
+const sdps = ref(0)
 async function initConnection () {
   connectionMode.value = 'host'
-  if (connectionId.value) return
+  if (connectionId.value) {
+    sdps.value++
+    return
+  }
   connectionId.value = getId().substring(0, 5).toUpperCase()
   await signalingDatabase.put({
     _id: connectionId.value,
