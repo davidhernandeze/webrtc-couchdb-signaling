@@ -182,7 +182,10 @@ async function initConnection () {
 async function joinConnection () {
   signalingDocument.value = await signalingDatabase.get(connectionId.value)
   peerConnection.onicecandidate = e => {
-    if (e.candidate) return
+    if (e.candidate) {
+      sdps.value++
+      return
+    }
     console.log('Remote description created: ' + JSON.stringify(peerConnection.localDescription))
     signalingDocument.value.remote_description = JSON.stringify(peerConnection.localDescription)
     signalingDatabase.put(signalingDocument.value)
