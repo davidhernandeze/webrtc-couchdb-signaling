@@ -131,33 +131,38 @@ const peerConnection = new RTCPeerConnection({
 
 async function initConnection () {
   connectionMode.value = 'host'
-  if (connectionId.value) return
 
-  connectionId.value = getId().substring(0, 5).toUpperCase()
+  const newConnectionId = getId().substring(0, 5).toUpperCase()
   await signalingDatabase.put({
-    _id: connectionId.value,
-    host_descriptions: [],
-    remote_descriptions: []
+    _id: newConnectionId,
+    host_description: '',
+    host_candidates: [],
+    remote_description: '',
+    remote_candidates: []
   })
-  signalingDocument.value = await signalingDatabase.get(connectionId.value)
+  signalingDocument.value = await signalingDatabase.get(newConnectionId)
 
-  peerConnection.onicecandidate = e => {
+  peerConnection.onicecandidate = async e => {
     if (e.candidate) {
-      // console.log('SDP: ' + JSON.stringify(peerConnection.localDescription))
-      signalingDocument.value.host_descriptions.push(JSON.stringify(peerConnection.localDescription))
+      signalingDocument.value.host_candidates.push(JSON.stringify(e.candidate))
       return
     }
-    // console.log('Host description created: ' + JSON.stringify(peerConnection.localDescription))
-    signalingDatabase.put(signalingDocument.value)
+
+    signalingDocument.value.host_description = JSON.stringify(peerConnection.localDescription)
+    await signalingDatabase.put(signalingDocument.value)
+    connectionId.value = newConnectionId
     signalingDatabase.changes({
       live: true,
       since: 'now',
       include_docs: true,
       doc_ids: [connectionId.value]
     }).on('change', async (change) => {
-      if (change.doc.remote_descriptions.length === 0) return
-      console.log(change.doc.remote_descriptions.length)
-      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_descriptions[0]))
+      if (change.deleted) return
+      if (change.doc.remote_candidates.length === 0) return
+      for (const candidate of change.doc.remote_candidates) {
+        await peerConnection.addIceCandidate(JSON.parse(candidate))
+      }
+      await peerConnection.setRemoteDescription(JSON.parse(change.doc.remote_description))
       signalingDocument.value = change.doc
     })
   }
@@ -180,12 +185,14 @@ async function initConnection () {
 
 async function joinConnection () {
   signalingDocument.value = await signalingDatabase.get(connectionId.value)
-  peerConnection.onicecandidate = e => {
+
+  peerConnection.onicecandidate = async e => {
     if (e.candidate) {
-      signalingDocument.value.remote_descriptions.push(JSON.stringify(peerConnection.localDescription))
+      signalingDocument.value.remote_candidates.push(JSON.stringify(peerConnection.localDescription))
       return
     }
-    signalingDatabase.put(signalingDocument.value)
+    signalingDocument.value.remote_description = JSON.stringify(peerConnection.localDescription)
+    await signalingDatabase.put(signalingDocument.value)
   }
   peerConnection.ondatachannel = ({ channel }) => {
     peerConnection.dc = channel
@@ -196,7 +203,11 @@ async function joinConnection () {
       messages.value.push({ id: getId(), isLocal: false, message: e.data })
     }
   }
-  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_descriptions[0]))
+
+  await peerConnection.setRemoteDescription(JSON.parse(signalingDocument.value.host_description))
+  for (const candidate of signalingDocument.value.host_candidates) {
+    await peerConnection.addIceCandidate(JSON.parse(candidate))
+  }
   const answer = await peerConnection.createAnswer()
   await peerConnection.setLocalDescription(answer)
 }
